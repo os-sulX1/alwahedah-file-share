@@ -27,6 +27,7 @@ import { z } from "zod";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { Doc } from "@/convex/_generated/dataModel";
 
 const formSchema = z.object({
 	title: z.string().min(5).max(200),
@@ -67,7 +68,19 @@ const UploadButton = () => {
 		});
 		const { storageId } = await result.json();
 		if (!orgId) return;
-		await createFile({ name: values.title, fileId: storageId, orgId });
+
+		const types = {
+			'image/png':'image',
+			'application/pdf':'pdf',
+			'text/csv':'csv'
+		}as Record<string , Doc<'files'>['type']>
+
+
+		try {
+			await createFile({ name: values.title, fileId: storageId, orgId ,type:types[values.file[0].type] });	
+		} catch (error) {
+			console.log(error)
+		}
 		form.reset();
 		setIsFileDialogOpen(false);
 		toast({
@@ -75,6 +88,7 @@ const UploadButton = () => {
 			title: "File uploaded successfully",
 			description: "Now everyone can view your file",
 		});
+	
 	}
 	const fileRef = form.register("file");
 
