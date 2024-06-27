@@ -86,3 +86,20 @@ export const getUserprofile = query({
       }
   },
 })
+
+
+export const getMe = query({
+  args:{},
+  async handler(ctx, args) {
+     const identity = await ctx.auth.getUserIdentity()
+
+     if(!identity){
+      throw new ConvexError('You must be logged in to upload')
+     }
+     const user = await getUser(ctx,identity.tokenIdentifier)
+     if(!user){
+      return null
+     }
+     return user
+  },
+})

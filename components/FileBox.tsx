@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 import { api } from "@/convex/_generated/api";
 import { useOrganization, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
@@ -15,6 +23,7 @@ import React from "react";
 import { DataTable } from "./FileTable";
 import { columns } from "./Columns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Doc } from "@/convex/_generated/dataModel";
 
 function FileBox({
 	title,
@@ -26,6 +35,7 @@ function FileBox({
 	const { user, isLoaded: userIsLoaded } = useUser();
 	let orgId: string | undefined = undefined;
 	const [query, setQuery] = useState("");
+	const [type , setType] = useState<Doc<'files'>['type'] | 'all'>('all')
 
 	if (isLoaded && userIsLoaded) {
 		orgId = organization?.id ?? user?.id;
@@ -38,7 +48,7 @@ function FileBox({
 	const files = useQuery(
 		api.files.getFiles,
 		orgId
-			? { orgId, query, favorites: favoritesOnly, deletedOnly: deletedOnly }
+			? { orgId, type : type ==='all'? undefined : type, query, favorites: favoritesOnly, deletedOnly: deletedOnly }
 			: "skip",
 	);
 	const isLoading = files === undefined;
@@ -66,6 +76,7 @@ function FileBox({
       <SearchBar query={query} setQuery={setQuery} />
       <UploadButton />
     </div>
+	
     <div className="p-4 rounded-lg">
       <Tabs defaultValue="grid">
         <TabsList className="flex justify-around relative">
@@ -76,6 +87,26 @@ function FileBox({
              <Table2Icon className="w-3 h-3" />  Table View
           </TabsTrigger>
         </TabsList>
+				<div className=" grid-cols-4 flex justify-between pt-3 h-full">
+					<div/>
+						<div className="flex items-center gap-3">
+							<h4 className="font-semibold">File type</h4>
+							<Select  value={type} onValueChange={(newType => {
+			setType(newType as any)
+		})} >
+  <SelectTrigger className="w-[180px]" defaultValue={'all'}  >
+    <SelectValue  />
+  </SelectTrigger>
+  <SelectContent>
+	<SelectItem value="all">All</SelectItem>
+    <SelectItem value="image">Image</SelectItem>
+    <SelectItem value="pdf">Pdf</SelectItem>
+    <SelectItem value="csv">CSV</SelectItem>
+  </SelectContent>
+</Select>
+						</div>
+
+		</div>
         <TabsContent value="grid">
           <div className="grid grid-cols-3 gap-4 mt-4">
             {modifiedFiles?.map((file) => (

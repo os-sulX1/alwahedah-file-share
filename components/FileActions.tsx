@@ -30,6 +30,7 @@ import {
 import React, { type ReactNode, useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import {
+  Check,
 	EllipsisVertical,
 	GanttChartIcon,
 	ImageIcon,
@@ -56,6 +57,8 @@ const FileCardAction = ({
 	const deleteFile = useMutation(api.files.deleteFile);
 	const restoreFile = useMutation(api.files.restoreFile);
 	const toggleFavorite = useMutation(api.files.toggleFavorite);
+
+  const me = useQuery(api.users.getMe)
 
 	const { toast } = useToast();
 	return (
@@ -117,7 +120,11 @@ const FileCardAction = ({
 					</DropdownMenuItem>
 
 					{/* biome-ignore lint/a11y/useValidAriaRole: <explanation> */}
-					<Protect role="org:admin" fallback={<div />}>
+					<Protect condition={()=>{
+            return Check({
+              role:'org:admin'
+            })|| file.userId === me?._id
+          }} fallback={<div />}>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
 							className="flex gap-2 text-red-700 items-center cursor-pointer"
