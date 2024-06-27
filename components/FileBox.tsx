@@ -12,8 +12,9 @@ import { Loader2 } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
 import { useEffect, useState } from "react";
 import React from "react";
+import { string } from "zod";
 
-function FileBox({title ,favorites}:{title:string, favorites?:boolean}) {
+function FileBox({title ,favoritesOnly}:{title:string, favoritesOnly?:boolean}) {
 	const { toast } = useToast();
 	const { organization, isLoaded } = useOrganization();
 	const { user, isLoaded: userIsLoaded } = useUser();
@@ -24,10 +25,13 @@ function FileBox({title ,favorites}:{title:string, favorites?:boolean}) {
 		orgId = organization?.id ?? user?.id;
 	}
 	
-	const files = useQuery(api.files.getFiles, orgId ? { orgId, query, favorites   } : "skip");
+	const favorites =useQuery(api.files.getAllFavorites,
+		orgId? {orgId} : 'skip'
+	)
+	const files = useQuery(api.files.getFiles, orgId ? { orgId, query, favorites:favoritesOnly } : "skip");
 	const isLoading = files === undefined;
 
-
+	
 	return (
 		<>
 			{isLoading && (
@@ -50,7 +54,7 @@ function FileBox({title ,favorites}:{title:string, favorites?:boolean}) {
 
 			<div className="grid grid-cols-3 gap-4  ">
 				{files?.map((file) => {
-					return <FileCard key={file._id} file={file} />;
+					return <FileCard favorites={favorites ?? []} key={file._id} file={file} />;
 				})}
 			</div>
 		</>

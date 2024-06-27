@@ -7,13 +7,11 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardFooter,
 	CardHeader,
 	CardTitle,
@@ -34,6 +32,7 @@ import {
 	EllipsisVertical,
 	GanttChartIcon,
 	ImageIcon,
+	StarHalf,
 	StarIcon,
 	TextIcon,
 	TrashIcon,
@@ -42,9 +41,10 @@ import { useMutation, useQuery } from "convex/react";
 import { useToast } from "./ui/use-toast";
 import Image from "next/image";
 import { api } from "@/convex/_generated/api";
+import type { GenericId } from "convex/values";
 
 
-const FileCardAction = ({ file }: { file: Doc<"files"> }) => {
+const FileCardAction = ({ file ,isFavorites }: { file: Doc<"files">,isFavorites:boolean }) => {
 	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 	const deleteFile = useMutation(api.files.deleteFile);
 	const toggleFavorite = useMutation(api.files.toggleFavorite)
@@ -96,7 +96,17 @@ const FileCardAction = ({ file }: { file: Doc<"files"> }) => {
 						}}
 					>
 						{" "}
-						<StarIcon className="w-4 h-4 " /> Favorite
+						{ isFavorites ? (
+							<>
+														<StarIcon className="w-4 h-4 " /> <p>Unfavorite</p>
+
+							</>
+						) : (
+							<>
+							<StarHalf className="w-4 h-4 " /> <p>favorite</p>
+
+</>						)
+						}
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
@@ -112,7 +122,7 @@ const FileCardAction = ({ file }: { file: Doc<"files"> }) => {
 	);
 };
 
-const FileCard = ({ file }: { file: Doc<"files"> }) => {
+const FileCard = ({ file ,favorites }: { file: Doc<"files">,favorites:Doc<"favorites"> }) => {
 	const typeIcon = {
 		image: <ImageIcon />,
 		pdf: <TextIcon />,
@@ -120,6 +130,8 @@ const FileCard = ({ file }: { file: Doc<"files"> }) => {
 	} as Record<Doc<"files">["type"], ReactNode>;
 
 	const fileUrl = useQuery(api.files.getFilesImageURL, { fileId: file.fileId });
+
+	const isFavorites = favorites.some((favorites: { fileId: GenericId<"files">; }) => favorites.fileId === file._id)
 
 	return (
 		<Card>
@@ -130,7 +142,7 @@ const FileCard = ({ file }: { file: Doc<"files"> }) => {
 					{file.name}
 				</CardTitle>
 				<div className="absolute top-1 right-1">
-					<FileCardAction file={file} />
+					<FileCardAction isFavorites={isFavorites} file={file} />
 				</div>
 			</CardHeader>
 			<CardContent className="relative h-52 flex items-center justify-center">
