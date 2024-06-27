@@ -8,6 +8,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { format, formatDistance, formatRelative, subDays } from "date-fns";
 
 import {
 	Card,
@@ -36,19 +37,26 @@ import {
 	StarIcon,
 	TextIcon,
 	TrashIcon,
+	Undo2Icon,
 } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { useToast } from "./ui/use-toast";
 import Image from "next/image";
 import { api } from "@/convex/_generated/api";
 import type { GenericId } from "convex/values";
-import { Protect } from "@clerk/nextjs";
+import { Protect, UserProfile } from "@clerk/nextjs";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { formatRevalidate } from "next/dist/server/lib/revalidate";
 
-
-const FileCardAction = ({ file ,isFavorites }: { file: Doc<"files">,isFavorites:boolean }) => {
+const FileCardAction = ({
+	file,
+	isFavorites,
+}: { file: Doc<"files">; isFavorites: boolean }) => {
 	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 	const deleteFile = useMutation(api.files.deleteFile);
-	const toggleFavorite = useMutation(api.files.toggleFavorite)
+	const restoreFile = useMutation(api.files.restoreFile);
+	const toggleFavorite = useMutation(api.files.toggleFavorite);
+
 	const { toast } = useToast();
 	return (
 		<>
@@ -92,55 +100,61 @@ const FileCardAction = ({ file ,isFavorites }: { file: Doc<"files">,isFavorites:
 						className="flex gap-2 text-black items-center cursor-pointer"
 						onClick={() => {
 							toggleFavorite({
-								fileId:file._id
-							})
+								fileId: file._id,
+							});
 						}}
 					>
 						{" "}
-						{ isFavorites ? (
+						{isFavorites ? (
 							<>
-														<StarIcon className="w-4 h-4 " /> <p>Unfavorite</p>
-
+								<StarIcon className="w-4 h-4 " /> <p>Unfavorite</p>
 							</>
 						) : (
 							<>
-							<StarHalf className="w-4 h-4 " /> <p>favorite</p>
-
-</>						)
-						}
+								<StarHalf className="w-4 h-4 " /> <p>favorite</p>
+							</>
+						)}
 					</DropdownMenuItem>
+
 					{/* biome-ignore lint/a11y/useValidAriaRole: <explanation> */}
-					{
-						/*
-						{<Protect
-					role="org:admin"
-					fallback={<div />}
-					 >
-						
-						**/
-					}
-
-							<DropdownMenuSeparator />
-					<DropdownMenuItem
-						className="flex gap-2 text-red-700 items-center cursor-pointer"
-						onClick={() => setIsConfirmOpen(true)}
-					>
-						{" "}
-						<TrashIcon className="w-4 h-4 " /> Delete
-					</DropdownMenuItem>
-						{/**
-						 * 	</Protect>}
-						 * 
-						 */}
-					
-				
+					<Protect role="org:admin" fallback={<div />}>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
+							className="flex gap-2 text-red-700 items-center cursor-pointer"
+							onClick={() => {
+								if (file.shouldDelete) {
+									restoreFile({
+										fileId: file._id,
+									});
+								} else {
+									setIsConfirmOpen(true);
+								}
+							}}
+						>
+							{" "}
+							{file.shouldDelete ? (
+								<>
+									<Undo2Icon className="w-4 h-4 text-green-500" />{" "}
+									<p className="text-green-500">Restore</p>
+								</>
+							) : (
+								<>
+									<TrashIcon className="w-4 h-4 " />
+									<p className="text-red-700">Delete</p>
+								</>
+							)}
+						</DropdownMenuItem>
+					</Protect>
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</>
 	);
 };
 
-const FileCard = ({ file ,favorites }: { file: Doc<"files">,favorites:Doc<"favorites"> }) => {
+const FileCard = ({
+	file,
+	favorites,
+}: { file: Doc<"files">; favorites: Doc<"favorites"> }) => {
 	const typeIcon = {
 		image: <ImageIcon />,
 		pdf: <TextIcon />,
@@ -149,12 +163,19 @@ const FileCard = ({ file ,favorites }: { file: Doc<"files">,favorites:Doc<"favor
 
 	const fileUrl = useQuery(api.files.getFilesImageURL, { fileId: file.fileId });
 
-	const isFavorites = favorites.some((favorites: { fileId: GenericId<"files">; }) => favorites.fileId === file._id)
+	const userProfile = useQuery(api.users.getUserprofile, {
+		userId: file.userId,
+	});
+
+	const isFavorites = favorites.some(
+		(favorites: { fileId: GenericId<"files"> }) =>
+			favorites.fileId === file._id,
+	);
 
 	return (
 		<Card>
 			<CardHeader className="relative  ">
-				<CardTitle className="flex gap-2">
+				<CardTitle className="flex gap-2 text-base font-normal">
 					<p>{typeIcon[file.type]}</p>
 
 					{file.name}
@@ -172,10 +193,29 @@ const FileCard = ({ file ,favorites }: { file: Doc<"files">,favorites:Doc<"favor
 				{file.type === "pdf" && <TextIcon className="w-40 h-40 " />}
 			</CardContent>
 			<CardFooter className="flex justify-center items-center">
-				<p>Card Footer</p>
-				<Button onClick={() => window.open(fileUrl as string, "_blank")}>
-					Download
-				</Button>
+				<div className="flex flex-col gap-y-8 w-full">
+					<div className="flex items-center justify-center ">
+						<Button onClick={() => window.open(fileUrl as string, "_blank")}>
+							Download
+						</Button>
+					</div>
+
+					<div className="flex w-full justify-between items-center ">
+						<div className="flex items-center gap-1.5 ">
+							<Avatar>
+								<AvatarImage src={userProfile?.image} />
+								<AvatarFallback>CN</AvatarFallback>
+							</Avatar>
+
+							<h4 className="text-xs font-bold">{userProfile?.name}</h4>
+						</div>
+						<div className="">
+							<p className="text-xs font-semibold">
+								{formatRelative(new Date(file._creationTime), new Date())}
+							</p>
+						</div>
+					</div>
+				</div>
 			</CardFooter>
 		</Card>
 	);

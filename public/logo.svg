@@ -1,0 +1,25 @@
+import svgwrite
+
+# Create an SVG drawing
+dwg = svgwrite.Drawing('file_store_logo.svg', profile='tiny')
+
+# Define colors
+primary_color = "#007BFF"  # Blue
+secondary_color = "#6C757D"  # Grey
+
+# Add folder icon (simple stylized folder)
+folder_icon = dwg.g(id='folder_icon')
+folder_icon.add(dwg.rect(insert=(10, 10), size=(50, 40), fill=primary_color))
+folder_icon.add(dwg.rect(insert=(10, 10), size=(50, 10), fill=secondary_color))
+dwg.add(folder_icon)
+
+# Add text: File Store
+dwg.add(dwg.text('File Store', insert=(70, 35), fill=primary_color, font_size='20px', font_family='Arial', font_weight='bold'))
+
+# Add slogan: Keep it safe, keep it secure
+dwg.add(dwg.text('Keep it safe, keep it secure', insert=(70, 55), fill=secondary_color, font_size='12px', font_family='Arial', font_style='italic'))
+
+# Save the SVG file
+dwg.save()
+
+dwg.filename

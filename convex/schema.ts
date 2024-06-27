@@ -11,9 +11,14 @@ export default defineSchema({
     fileId: v.id('_storage'),
     type: fileTypes,
     orgId: v.string(),
-  }).index('by_orgId', ['orgId']),
+    userId:v.id('users'),
+    shouldDelete:v.optional(v.boolean()),
+    
+  }).index('by_orgId', ['orgId']).index('by_shouldDelete', ['shouldDelete']),
 
   users: defineTable({
+    name:v.optional(v.string()),
+    image:v.optional(v.string()),
     tokenIdentifier: v.string(),
     orgIds: v.array(v.object({
       orgId:v.string(),

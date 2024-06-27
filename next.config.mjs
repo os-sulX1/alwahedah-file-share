@@ -4,6 +4,9 @@ const nextConfig = {
     remotePatterns:[
       {
         hostname:'intent-swan-456.convex.cloud',
+      },
+      {
+        hostname:'img.clerk.com'
       }
     ]
   }

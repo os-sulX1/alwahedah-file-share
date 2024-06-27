@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import React from "react";
 import { string } from "zod";
 
-function FileBox({title ,favoritesOnly}:{title:string, favoritesOnly?:boolean}) {
+function FileBox({title ,favoritesOnly ,deletedOnly}:{title:string, favoritesOnly?:boolean,deletedOnly?:boolean}) {
 	const { toast } = useToast();
 	const { organization, isLoaded } = useOrganization();
 	const { user, isLoaded: userIsLoaded } = useUser();
@@ -28,7 +28,7 @@ function FileBox({title ,favoritesOnly}:{title:string, favoritesOnly?:boolean}) 
 	const favorites =useQuery(api.files.getAllFavorites,
 		orgId? {orgId} : 'skip'
 	)
-	const files = useQuery(api.files.getFiles, orgId ? { orgId, query, favorites:favoritesOnly } : "skip");
+	const files = useQuery(api.files.getFiles, orgId ? { orgId, query, favorites:favoritesOnly ,deletedOnly:deletedOnly } : "skip");
 	const isLoading = files === undefined;
 
 	
