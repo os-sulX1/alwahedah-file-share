@@ -8,13 +8,19 @@ import { useToast } from "@/components/ui/use-toast";
 import UploadButton from "@/components/UploadButton";
 import FileCard from "@/components/FileCard";
 import Image from "next/image";
-import { Loader2 } from "lucide-react";
+import { Grid2X2Icon, Loader2, Table2Icon } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import React from "react";
-import { string } from "zod";
+import { DataTable } from "./FileTable";
+import { columns } from "./Columns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
-function FileBox({title ,favoritesOnly ,deletedOnly}:{title:string, favoritesOnly?:boolean,deletedOnly?:boolean}) {
+function FileBox({
+	title,
+	favoritesOnly,
+	deletedOnly,
+}: { title: string; favoritesOnly?: boolean; deletedOnly?: boolean }) {
 	const { toast } = useToast();
 	const { organization, isLoaded } = useOrganization();
 	const { user, isLoaded: userIsLoaded } = useUser();
@@ -24,39 +30,70 @@ function FileBox({title ,favoritesOnly ,deletedOnly}:{title:string, favoritesOnl
 	if (isLoaded && userIsLoaded) {
 		orgId = organization?.id ?? user?.id;
 	}
-	
-	const favorites =useQuery(api.files.getAllFavorites,
-		orgId? {orgId} : 'skip'
-	)
-	const files = useQuery(api.files.getFiles, orgId ? { orgId, query, favorites:favoritesOnly ,deletedOnly:deletedOnly } : "skip");
+
+	const favorites = useQuery(
+		api.files.getAllFavorites,
+		orgId ? { orgId } : "skip",
+	);
+	const files = useQuery(
+		api.files.getFiles,
+		orgId
+			? { orgId, query, favorites: favoritesOnly, deletedOnly: deletedOnly }
+			: "skip",
+	);
 	const isLoading = files === undefined;
 
-	
+	const modifiedFiles =
+		files?.map((file) => ({
+			...file,
+			isFavorited: (favorites ?? []).some(
+				(favorite) => favorite.fileId === file._id,
+			),
+		})) ?? [];
+
 	return (
 		<>
 			{isLoading && (
 				<div className="flex flex-col items-center justify-center pt-32 text-gray-400">
 					<Loader2 className="w-32 h-32 animate-spin" />
-					<p className="text-2xl">Loading ...</p>
+					<p className="text-2xl">Loading your files ...</p>
 				</div>
 			)}
 			{!isLoading && (
-				<>
-					<div className="flex justify-between items-center mb-8">
-						<h1 className="text-4xl font-bold">{title}</h1>
-						<SearchBar query={query} setQuery={setQuery} />
+  <>
+    <div className="flex justify-between items-center mb-8">
+      <h1 className="text-4xl font-bold">{title}</h1>
+      <SearchBar query={query} setQuery={setQuery} />
+      <UploadButton />
+    </div>
+    <div className="p-4 rounded-lg">
+      <Tabs defaultValue="grid">
+        <TabsList className="flex justify-around relative">
+          <TabsTrigger value="grid" className="p-4 bg-gray-800 text-white rounded-lg h-full" >
+            <Grid2X2Icon className="w-3 h-3" />Grid View
+          </TabsTrigger>
+          <TabsTrigger value="table" className="p-4 bg-gray-800 text-white rounded-lg">
+             <Table2Icon className="w-3 h-3" />  Table View
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="grid">
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            {modifiedFiles?.map((file) => (
+              <FileCard key={file._id} file={file} />
+            ))}
+          </div>
+        </TabsContent>
+        <TabsContent value="table">
+          <div className="mt-4">
+            <DataTable columns={columns} data={modifiedFiles}  />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+    {files?.length === 0 && <PlaceHolderState />}
+  </>
+)}
 
-						<UploadButton />
-					</div>
-					{files?.length === 0 && <PlaceHolderState />}
-				</>
-			)}
-
-			<div className="grid grid-cols-3 gap-4  ">
-				{files?.map((file) => {
-					return <FileCard favorites={favorites ?? []} key={file._id} file={file} />;
-				})}
-			</div>
 		</>
 	);
 }

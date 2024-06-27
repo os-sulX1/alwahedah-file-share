@@ -47,114 +47,13 @@ import type { GenericId } from "convex/values";
 import { Protect, UserProfile } from "@clerk/nextjs";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { formatRevalidate } from "next/dist/server/lib/revalidate";
+import FileCardAction from "./FileActions";
 
-const FileCardAction = ({
-	file,
-	isFavorites,
-}: { file: Doc<"files">; isFavorites: boolean }) => {
-	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-	const deleteFile = useMutation(api.files.deleteFile);
-	const restoreFile = useMutation(api.files.restoreFile);
-	const toggleFavorite = useMutation(api.files.toggleFavorite);
 
-	const { toast } = useToast();
-	return (
-		<>
-			<AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This action cannot be undone. This will permanently delete your
-							account and remove your data from our servers.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction
-							onClick={() => {
-								deleteFile({
-									fileId: file._id,
-								});
-								toast({
-									variant: "default",
-									title:
-										"you have successfully delete the file from the system",
-								});
-							}}
-						>
-							Continue
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
-
-			<DropdownMenu>
-				<DropdownMenuTrigger>
-					<EllipsisVertical />
-				</DropdownMenuTrigger>
-				<DropdownMenuContent>
-					<DropdownMenuLabel>My Account</DropdownMenuLabel>
-					<DropdownMenuSeparator />
-					<DropdownMenuItem
-						className="flex gap-2 text-black items-center cursor-pointer"
-						onClick={() => {
-							toggleFavorite({
-								fileId: file._id,
-							});
-						}}
-					>
-						{" "}
-						{isFavorites ? (
-							<>
-								<StarIcon className="w-4 h-4 " /> <p>Unfavorite</p>
-							</>
-						) : (
-							<>
-								<StarHalf className="w-4 h-4 " /> <p>favorite</p>
-							</>
-						)}
-					</DropdownMenuItem>
-
-					{/* biome-ignore lint/a11y/useValidAriaRole: <explanation> */}
-					<Protect role="org:admin" fallback={<div />}>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							className="flex gap-2 text-red-700 items-center cursor-pointer"
-							onClick={() => {
-								if (file.shouldDelete) {
-									restoreFile({
-										fileId: file._id,
-									});
-								} else {
-									setIsConfirmOpen(true);
-								}
-							}}
-						>
-							{" "}
-							{file.shouldDelete ? (
-								<>
-									<Undo2Icon className="w-4 h-4 text-green-500" />{" "}
-									<p className="text-green-500">Restore</p>
-								</>
-							) : (
-								<>
-									<TrashIcon className="w-4 h-4 " />
-									<p className="text-red-700">Delete</p>
-								</>
-							)}
-						</DropdownMenuItem>
-					</Protect>
-				</DropdownMenuContent>
-			</DropdownMenu>
-		</>
-	);
-};
 
 const FileCard = ({
 	file,
-	favorites,
-}: { file: Doc<"files">; favorites: Doc<"favorites"> }) => {
+}: { file: Doc<"files"> &{isFavorited:boolean}}) => {
 	const typeIcon = {
 		image: <ImageIcon />,
 		pdf: <TextIcon />,
@@ -167,10 +66,7 @@ const FileCard = ({
 		userId: file.userId,
 	});
 
-	const isFavorites = favorites.some(
-		(favorites: { fileId: GenericId<"files"> }) =>
-			favorites.fileId === file._id,
-	);
+	
 
 	return (
 		<Card>
@@ -181,7 +77,7 @@ const FileCard = ({
 					{file.name}
 				</CardTitle>
 				<div className="absolute top-1 right-1">
-					<FileCardAction isFavorites={isFavorites} file={file} />
+					<FileCardAction isFavorited={file.isFavorited} file={file} />
 				</div>
 			</CardHeader>
 			<CardContent className="relative h-52 flex items-center justify-center">
