@@ -42,6 +42,7 @@ import { useToast } from "./ui/use-toast";
 import Image from "next/image";
 import { api } from "@/convex/_generated/api";
 import type { GenericId } from "convex/values";
+import { Protect } from "@clerk/nextjs";
 
 
 const FileCardAction = ({ file ,isFavorites }: { file: Doc<"files">,isFavorites:boolean }) => {
@@ -108,7 +109,18 @@ const FileCardAction = ({ file ,isFavorites }: { file: Doc<"files">,isFavorites:
 </>						)
 						}
 					</DropdownMenuItem>
-					<DropdownMenuSeparator />
+					{/* biome-ignore lint/a11y/useValidAriaRole: <explanation> */}
+					{
+						/*
+						{<Protect
+					role="org:admin"
+					fallback={<div />}
+					 >
+						
+						**/
+					}
+
+							<DropdownMenuSeparator />
 					<DropdownMenuItem
 						className="flex gap-2 text-red-700 items-center cursor-pointer"
 						onClick={() => setIsConfirmOpen(true)}
@@ -116,6 +128,12 @@ const FileCardAction = ({ file ,isFavorites }: { file: Doc<"files">,isFavorites:
 						{" "}
 						<TrashIcon className="w-4 h-4 " /> Delete
 					</DropdownMenuItem>
+						{/**
+						 * 	</Protect>}
+						 * 
+						 */}
+					
+				
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</>

@@ -26,7 +26,7 @@ const user =await ctx.db.query('users').withIndex('by_tokenIdentifier',q => q.eq
 if(!user){
   return null
 }
-    const hasAccess = user.orgIds.includes(orgId) || user.tokenIdentifier.includes(orgId);
+    const hasAccess = user.orgIds.some(item => item.orgId === orgId) || user.tokenIdentifier.includes(orgId);
 
       if(!hasAccess){
         throw null
@@ -105,11 +105,17 @@ export const deleteFile = mutation({
    async handler(ctx, args) {
     const hasAccess = await hasAccessToFile(ctx , args.fileId)
 
-    if(hasAccess){
+    if(!hasAccess){
       return new ConvexError('No access to a file')
     }
 
-    await ctx.db.delete(args.fileId)
+    const isAdmin = hasAccess.user.orgIds.find(org=>org.orgId === hasAccess.file.orgId)?.role=== 'admin'
+
+    if(isAdmin)  {
+      await ctx.db.delete(args.fileId)
+    }else  throw new ConvexError('You have no access admin to delete')
+    
+
   },
 
 })
@@ -171,11 +177,7 @@ export const getAllFavorites =  query({
     }
     const favorites = await ctx.db.query('favorites')
     .withIndex('by_userId_fileId_orgId', q=>q.eq('userId',hasAccess.user._id).eq('orgId',args.orgId)).collect()
-
     return favorites
-
- 
-
   },
 })
 
